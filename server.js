@@ -6,9 +6,8 @@ const cors = require("cors");
 const helmet = require("helmet");
 const MOVIESTORE = require("./moviestore.json");
 
-// console.log(MOVIESTORE);
-
-app.use(morgan("dev"));
+const morganSetting = process.env.NODE_ENV === "production" ? "tiny" : "common";
+app.use(morgan(morganSetting));
 app.use(helmet());
 app.use(cors());
 
@@ -28,7 +27,7 @@ app.use(function validateToken(req, res, next) {
 // Handle /movie endpoint with WebGLRenderbuffer, country or avg_vote params
 app.get("/movie", function(req, res) {
   let response = MOVIESTORE;
-  // change the object to be and array
+  // convert the object to array
   Object.values(response);
   const { genre, country, avg_vote } = req.query;
 
@@ -53,6 +52,21 @@ app.get("/movie", function(req, res) {
   res.send(response);
 });
 
-app.listen(8000, () => {
-  console.log("Server is listening on PORT 8000");
+// Add a middleware to hide errors from user
+// 4 parameters in middleware, express knows to treat this as error handler
+app.use((error, req, res, next) => {
+  let response;
+  if (process.env.NODE_ENV === "production") {
+    response = { error: { message: "server error" } };
+  } else {
+    response = { error };
+  }
+
+  res.status(500).json(response);
+});
+
+const PORT = process.env.PORT || 8000;
+
+app.listen(PORT, () => {
+  console.log(`Server is listening on ${PORT}`);
 });
